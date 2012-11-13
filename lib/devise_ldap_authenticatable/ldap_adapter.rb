@@ -178,7 +178,8 @@ module Devise
           end
           unless ::Devise.ldap_ad_group_check
             admin_ldap.search(:base => group_name, :scope => Net::LDAP::SearchScope_BaseObject) do |entry|
-              unless entry[group_attribute].include? dn
+              entry[group_attribute].map! { |g| g.downcase }
+              unless entry[group_attribute].include? dn.downcase
                 DeviseLdapAuthenticatable::Logger.send("User #{dn} is not in group: #{group_name }")
                 return false
               end
