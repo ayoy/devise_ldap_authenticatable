@@ -94,6 +94,7 @@ module Devise
 
         @group_base = ldap_config["group_base"]
         @check_group_membership = ldap_config.has_key?("check_group_membership") ? ldap_config["check_group_membership"] : ::Devise.ldap_check_group_membership
+        @check_group_membership_ignore_case = ldap_config.has_key?("check_group_membership_ignore_case") ? ldap_config["check_group_membership_ignore_case"] : ::Devise.ldap_check_group_membership_ignore_case
         @required_groups = ldap_config["required_groups"]
         @required_attributes = ldap_config["require_attribute"]
 
@@ -177,9 +178,12 @@ module Devise
             group_name = group
           end
           unless ::Devise.ldap_ad_group_check
+            dn_to_check = @check_group_membership_ignore_case ? dn.downcase : dn
             admin_ldap.search(:base => group_name, :scope => Net::LDAP::SearchScope_BaseObject) do |entry|
-              entry[group_attribute].map! { |g| g.downcase }
-              unless entry[group_attribute].include? dn.downcase
+              if @check_group_membership_ignore_case
+                entry[group_attribute].map! { |g| g.downcase }
+              end
+              unless entry[group_attribute].include? dn_to_check
                 DeviseLdapAuthenticatable::Logger.send("User #{dn} is not in group: #{group_name }")
                 return false
               end
